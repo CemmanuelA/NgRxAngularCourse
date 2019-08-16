@@ -2,6 +2,10 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 
 
 import { Product } from '../product';
+import { Observable } from 'rxjs';
+import { takeWhile } from 'rxjs/operators';
+
+// services
 import { ProductService } from '../product.service';
 
 /* NgRx */
@@ -17,6 +21,9 @@ import * as productActions from '../state/product.action';
 export class ProductListComponent implements OnInit, OnDestroy {
   pageTitle = 'Products';
   errorMessage: string;
+  componentActive = true;
+  products$: Observable<Product[]>;
+  errorMessage$: Observable<string>;
 
   displayCode: boolean;
 
@@ -30,24 +37,32 @@ export class ProductListComponent implements OnInit, OnDestroy {
               private productService: ProductService) { }
 
   ngOnInit(): void {
-    this.store.pipe(select(fromProduct.getCurrentProduct)).subscribe(
-      currentProduct => this.selectedProduct = currentProduct
-    );
+    this.store.pipe(select(fromProduct.getCurrentProduct),
+      takeWhile(() => this.componentActive))
+      .subscribe(currentProduct => this.selectedProduct = currentProduct);
 
-    this.productService.getProducts().subscribe(
+    this.errorMessage$ = this.store.pipe(select(fromProduct.getError));
+    this.store.dispatch(new productActions.Load());
+    this.products$ = this.store.pipe(select(fromProduct.getProducts));
+
+    /* this.productService.getProducts().subscribe(
       (products: Product[]) => this.products = products,
       (err: any) => this.errorMessage = err.error
-    );
+    ); */
 
-    this.store.pipe(select(fromProduct.getShowProductCode)).subscribe( showProductCode =>
+    this.store.pipe(select(fromProduct.getShowProductCode),
+                    takeWhile(() => this.componentActive))
+    .subscribe( showProductCode =>
       this.displayCode = showProductCode);
   }
 
   ngOnDestroy(): void {
+    this.componentActive = false;
   }
 
-  checkChanged(value: boolean): void { 
-    this.store.dispatch(new productActions.ToggleProductCode(value))}
+  checkChanged(value: boolean): void {
+    this.store.dispatch(new productActions.ToggleProductCode(value));
+  }
 
   newProduct(): void {
     this.store.dispatch(new productActions.InitializeCurrentProduct());
