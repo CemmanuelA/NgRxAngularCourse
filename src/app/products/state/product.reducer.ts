@@ -43,9 +43,9 @@ export const reducer = (state = initialState , action: ProductActions): ProductS
                     showProductCode: action.payload,
                    };
 
-        case ProductActionTypes.ToggleProductCode:
+        case ProductActionTypes.SetCurrentProduct:
             return { ...state,
-                    showProductCode: action.payload,
+                    currentProduct: action.payload,
                    };
         case ProductActionTypes.ClearCurrentProduct:
             return { ...state,
